@@ -64,7 +64,10 @@ class Application():
             output=pd.DataFrame()
             for well_name in df.iloc[:,1:]:
                 data=pd.DataFrame()
-                fluorescence = df[well_name]
+                if normalize_checkbox_value.get() == 1:
+                    fluorescence = normalize_fluorescence(df[well_name])
+                else:
+                    fluorescence = df[well_name]
                 min_fluor, min_ind, max_fluor, max_ind = constrains(fluorescence)
             # Constrains for hill and assymetry coefficients are [-3, 3]; infliction point is
             # fitted in a region between start and end of the transition.
@@ -84,10 +87,9 @@ class Application():
         analyse_button = tk.Button(master, text="Analyse", state='disabled', command=analyse)
         exit_button = tk.Button(master, text='Exit', command=quit)
         
-        normalize_checkbox_value = tk.BooleanVar()
+        normalize_checkbox_value = tk.IntVar()
         normalize_checkbox = tk.Checkbutton(master, text='Normalize data',
-                                            variable=normalize_checkbox_value,
-                                            onvalue=True, offvalue=False)
+                                            variable=normalize_checkbox_value, onvalue=1, offvalue=0)
         
         tk.Label(master, text="SprintFTSA", font='arial 16 bold').pack(pady=15)
         tk.Label(master, text=version, font='arial 12').pack()

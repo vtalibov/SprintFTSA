@@ -2,6 +2,8 @@
 
 Script for bulk processing of thermal shift assay (FTSA/DSF) data. Uses a simple GUI to prompt for input and output files.
 
+![](/SprintFTSA.png)
+
 ### Data
 
 Written for .csv export of data from Biorad RT-PCR thermo cyclers, *e.g.* CFX96/CFX384; see input data example.
