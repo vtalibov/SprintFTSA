@@ -10,9 +10,9 @@ Written for .csv export of data from Biorad RT-PCR thermo cyclers, *e.g.* CFX96/
 
 ### Data analysis
 
-Transition phase of the thermal denaturation curve and the corresponding temperature range are identified numerically, then the curve is approximated with 5-parametric logistic curve equation. The script outputs results table and the corresponding plots to a specified directory.
+Transition phase of the thermal denaturation curve and the corresponding temperature range are identified numerically, then the curve is approximated with a 5-parametric logistic curve equation. The script outputs results table and the corresponding plots.
 
-![](/Results_example/C4.png)
+![](/results_example/C4.png)
 
 ### Good to know
 
