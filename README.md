@@ -1,14 +1,14 @@
 # SprintFTSA
 
-Script for bulk processing of FTSA/DSF data. Uses a simple GUI to prompt for input and output files.
+Script for bulk processing of thermal shift assay (FTSA/DSF) data. Uses a simple GUI to prompt for input and output files.
 
 ### Data
 
-Written for .csv export of raw data from Biorad RT-PCR thermo cyclers, *e.g.* CFX96/CFX384; see input data example.
+Written for .csv export of data from Biorad RT-PCR thermo cyclers, *e.g.* CFX96/CFX384; see input data example.
 
 ### Data analysis
 
-Transition phase of the thermal denaturation curve and the corresponding temperature range are identified numerically, then the curve is approximated with 5-parametric logistic curve equation. The script outputs results data table to the specified directory together with data plots.
+Transition phase of the thermal denaturation curve and the corresponding temperature range are identified numerically, then the curve is approximated with 5-parametric logistic curve equation. The script outputs results table and the corresponding plots to a specified directory.
 
 ![](/Results_example/C4.png)
 
