@@ -6,7 +6,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
-import pandas as pd
 from os import path
 import tkinter as tk
 from tkinter import filedialog
@@ -32,17 +31,17 @@ def get_tm(infl, hill, assym):
     # point for 5-parametric model.
     return infl - np.log(2**(1/assym) - 1)/ hill
 
-def make_plot(temp, fluorescence, popt1, min, max):
+def make_plot(temp, fluorescence, popt1, min, max, plot_title = 'Title'):
     plt.xlabel("Temperature ($\degree$C)")
     plt.ylabel("Fluorescence")
-    plt.title(well_name)
+    plt.title(plot_title)
     plt.plot(temp, five_parametric_logistic_fixed(temp, *popt1), "--", color = 'black', label = "5PL")
     plt.vlines(get_tm(*popt1),min_fluor,max_fluor,color = "grey", 
                label = "$T_m$ = {} (5PL)".format(round(get_tm(*popt1),1)))
     plt.legend()
     plt.scatter(temp, fluorescence, s = 5)
     # to save plot to the same directory as the results file
-    plot_path = path.join(path.dirname(output_filepath), "{}.png".format(well_name))
+    plot_path = path.join(path.dirname(output_filepath), "{}.png".format(plot_title))
     plt.savefig(plot_path)
     plt.clf()    
 
@@ -54,32 +53,38 @@ class Application():
             input_filepath = filedialog.askopenfilename(title = "Open raw data file",
                                                         filetypes=(("CSV Files","*.csv"),))
             output_filepath = filedialog.asksaveasfilename(title = "Save results table",
-                                                        filetypes=(("CSV Files","*.csv"),))
+                                                           defaultextension=".csv",
+                                                           filetypes=(("CSV Files","*.csv"),))
             analyse_button["state"] = "normal"
         def analyse():
             # non-elegant to pass non-declared variables to all functions
-            global well_name, min_fluor, min_ind, max_fluor, max_in
-            df = pd.read_csv(input_filepath)
-            temp = df['Temperature']
-            output=pd.DataFrame()
-            for well_name in df.iloc[:,1:]:
-                data=pd.DataFrame()
+            global title, min_fluor, min_ind, max_fluor, max_in
+
+            experimental_data = np.genfromtxt(input_filepath, delimiter=',', skip_header=1)
+
+            with open(input_filepath, 'r') as file:
+                header = file.readline().strip().split(',')
+
+            temp = experimental_data[:, 0] # retrieve temperature values
+            output = np.array(['Well', '5PL'])
+            for well in range(1, experimental_data.shape[1]):
                 if normalize_checkbox_value.get() == 1:
-                    fluorescence = normalize_fluorescence(df[well_name])
+                    fluorescence = normalize_fluorescence(experimental_data[:, well])
                 else:
-                    fluorescence = df[well_name]
+                    fluorescence = experimental_data[:, well]
                 min_fluor, min_ind, max_fluor, max_ind = constrains(fluorescence)
-            # Constrains for hill and assymetry coefficients are [-3, 3]; infliction point is
-            # fitted in a region between start and end of the transition.
-                popt1, _ = opt.curve_fit(five_parametric_logistic_fixed, temp[min_ind : max_ind + 1], 
+                        # Constrains for hill and assymetry coefficients are [-3, 3]; infliction point is
+                        # fitted in a region between start and end of the transition.
+                popt1, _ = opt.curve_fit(five_parametric_logistic_fixed, 
+                                         temp[min_ind : max_ind + 1], 
                                          fluorescence[min_ind : max_ind +1], 
                                          bounds = ([temp[min_ind],-3,-3],[temp[max_ind],3,3]))
-                data['Well'] = [well_name]
-                data['5PL'] = [get_tm(*popt1)]
-                output = pd.concat([output, data])
-                make_plot(temp, fluorescence, popt1, min_fluor, max_fluor)
-            output.to_csv(output_filepath, index = False)      
-        
+                results = np.array([header[well], get_tm(*popt1)])
+                output = np.vstack((output, results))
+                title = header[well]
+                make_plot(temp, fluorescence, popt1, min_fluor, max_fluor, title)
+            np.savetxt(output_filepath, output, fmt="%s", delimiter=',')
+
         frame = tk.Frame(master)
         frame.pack()
 
