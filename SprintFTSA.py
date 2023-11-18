@@ -23,23 +23,42 @@ def normalize_fluorescence(fluorescence):
     min_fluor, min_ind, max_fluor, max_ind = constrains(fluorescence)
     return [((value - min_fluor)/(max_fluor - min_fluor))*100 for value in fluorescence]
 
-def five_parametric_logistic_fixed(temp, infl, hill, assym):
-    return min_fluor + ((max_fluor - min_fluor) / (1 + np.exp(hill*(infl - temp)))**assym)
+def five_parametric_logistic_fixed(temperature, infl, hill, assym):
+    return min_fluor + ((max_fluor - min_fluor) / (1 + np.exp(hill*(infl - temperature)))**assym)
+
+def fit_curve(temperature, fluorescence):
+    global min_fluor, min_ind, max_fluor, max_ind
+    min_fluor, min_ind, max_fluor, max_ind = constrains(fluorescence)
+    try:
+        # Constrains for hill and assymetry coefficients are [-3, 3]; infliction point is
+        # fitted in a region between start and end of the transition.
+        parameters, covariance = opt.curve_fit(five_parametric_logistic_fixed, 
+                                               temperature[min_ind : max_ind + 1],
+                                               fluorescence[min_ind : max_ind +1],
+                                               bounds = ([temperature[min_ind],-3,-3],
+                                                         [temperature[max_ind],3,3]))
+        if np.any(np.diag(covariance) <= 0): # quality of the fit check
+            raise RuntimeError("No convergence.")
+        return parameters
+    except Exception as error:
+        print("Curve fitting error {}".format(error))
+        return None
 
 def get_tm(infl, hill, assym):
     # Quantifies dTm value (midpoint transition) from the infliction
     # point for 5-parametric model.
     return infl - np.log(2**(1/assym) - 1)/ hill
 
-def make_plot(temp, fluorescence, popt1, min, max, plot_title = 'Title'):
+def make_plot(temperature, fluorescence, fit_parameters, min_fluor, max_fluor, plot_title = 'Title'):
     plt.xlabel("Temperature ($\degree$C)")
     plt.ylabel("Fluorescence")
     plt.title(plot_title)
-    plt.plot(temp, five_parametric_logistic_fixed(temp, *popt1), "--", color = 'black', label = "5PL")
-    plt.vlines(get_tm(*popt1),min_fluor,max_fluor,color = "grey", 
-               label = "$T_m$ = {} (5PL)".format(round(get_tm(*popt1),1)))
+    plt.plot(temperature, five_parametric_logistic_fixed(temperature, *fit_parameters),
+             "--", color = 'black', label = "5PL")
+    plt.vlines(get_tm(*fit_parameters), min_fluor, max_fluor, color = "grey",
+               label = "$T_m$ = {} (5PL)".format(round(get_tm(*fit_parameters),1)))
     plt.legend()
-    plt.scatter(temp, fluorescence, s = 5)
+    plt.scatter(temperature, fluorescence, s = 5)
     # to save plot to the same directory as the results file
     plot_path = path.join(path.dirname(output_filepath), "{}.png".format(plot_title))
     plt.savefig(plot_path)
@@ -57,32 +76,24 @@ class Application():
                                                            filetypes=(("CSV Files","*.csv"),))
             analyse_button["state"] = "normal"
         def analyse():
-            # non-elegant to pass non-declared variables to all functions
-            global title, min_fluor, min_ind, max_fluor, max_in
-
             experimental_data = np.genfromtxt(input_filepath, delimiter=',', skip_header=1)
-
             with open(input_filepath, 'r') as file:
                 header = file.readline().strip().split(',')
-
-            temp = experimental_data[:, 0] # retrieve temperature values
+            temperature = experimental_data[:, 0] # retrieve temperature values
             output = np.array(['Well', '5PL'])
             for well in range(1, experimental_data.shape[1]):
                 if normalize_checkbox_value.get() == 1:
                     fluorescence = normalize_fluorescence(experimental_data[:, well])
                 else:
                     fluorescence = experimental_data[:, well]
-                min_fluor, min_ind, max_fluor, max_ind = constrains(fluorescence)
-                        # Constrains for hill and assymetry coefficients are [-3, 3]; infliction point is
-                        # fitted in a region between start and end of the transition.
-                popt1, _ = opt.curve_fit(five_parametric_logistic_fixed, 
-                                         temp[min_ind : max_ind + 1], 
-                                         fluorescence[min_ind : max_ind +1], 
-                                         bounds = ([temp[min_ind],-3,-3],[temp[max_ind],3,3]))
-                results = np.array([header[well], get_tm(*popt1)])
+                fit_parameters = fit_curve(temperature, fluorescence)
+                if fit_parameters is None:
+                    results = np.array([header[well], np.nan])
+                else:
+                    results = np.array([header[well], get_tm(*fit_parameters)])
+                    title = header[well]
+                    make_plot(temperature, fluorescence, fit_parameters, min_fluor, max_fluor, title)
                 output = np.vstack((output, results))
-                title = header[well]
-                make_plot(temp, fluorescence, popt1, min_fluor, max_fluor, title)
             np.savetxt(output_filepath, output, fmt="%s", delimiter=',')
 
         frame = tk.Frame(master)
