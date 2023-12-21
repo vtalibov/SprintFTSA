@@ -12,7 +12,9 @@ from tkinter import filedialog
 
 
 def constrains(fluorescence):
-    # Identifies transition region
+    '''
+    Identifies transition region, assuming the temperature gradient is linear.
+    '''
     min_fluor = np.min(fluorescence[:np.argmax(np.diff(fluorescence))+1])
     min_ind = np.argmin(fluorescence[:np.argmax(np.diff(fluorescence))+1])
     max_fluor = np.max(fluorescence[np.argmax(np.diff(fluorescence)):])
@@ -45,8 +47,13 @@ def fit_curve(temperature, fluorescence):
         return None
 
 def get_tm(infl, hill, assym):
-    # Quantifies dTm value (midpoint transition) from the infliction
-    # point for 5-parametric model.
+    '''
+    Quantifies dTm value (midpoint transition) from the infliction point for 
+    5-parametric sigmoidal model.
+    :infl: - infliction point of the curve
+    :hill: - coefficient of the curve steepness
+    :assym: - curve asymmetry coefficient. If 1, infliction point = midpoint.
+    '''
     return infl - np.log(2**(1/assym) - 1)/ hill
 
 def make_plot(temperature, fluorescence, fit_parameters, min_fluor, max_fluor, plot_title = 'Title'):
@@ -66,7 +73,9 @@ def make_plot(temperature, fluorescence, fit_parameters, min_fluor, max_fluor, p
 
 # Main class
 class Application():
+    
     def __init__(self, master):
+        
         def io_path():
             global input_filepath, output_filepath
             input_filepath = filedialog.askopenfilename(title = "Open raw data file",
@@ -74,11 +83,18 @@ class Application():
             output_filepath = filedialog.asksaveasfilename(title = "Save results table",
                                                            defaultextension=".csv",
                                                            filetypes=(("CSV Files","*.csv"),))
-            analyse_button["state"] = "normal"
-        def analyse():
-            experimental_data = np.genfromtxt(input_filepath, delimiter=',', skip_header=1)
-            with open(input_filepath, 'r') as file:
+            tm_analysis_button["state"] = "normal"
+            isothermal_analysis_button["state"] = "normal"
+
+        
+        def open_data(input):
+            data = np.genfromtxt(input, delimiter=',', skip_header=1)
+            with open(input, 'r') as file:
                 header = file.readline().strip().split(',')
+            return data, header
+        
+        def tm_analysis():
+            experimental_data, header = open_data(input_filepath)
             temperature = experimental_data[:, 0] # retrieve temperature values
             output = np.array(['Well', '5PL'])
             for well in range(1, experimental_data.shape[1]):
@@ -96,11 +112,43 @@ class Application():
                 output = np.vstack((output, results))
             np.savetxt(output_filepath, output, fmt="%s", delimiter=',')
 
+        def isothermal_analysis():
+            try:
+                temperature_of_interest = float(retrieve_isotermal_temperature_input())
+            except Exception:
+                tk.messagebox.showerror("Error", "Invalid temperature value.")
+            experimental_data, header = open_data(input_filepath)
+            temperature = experimental_data[:, 0] # retrieve temperature values
+            output = np.array(['Well', '%Unfolded at {}C'.format(temperature_of_interest)])
+            for well in range(1, experimental_data.shape[1]):
+                fluorescence = normalize_fluorescence(experimental_data[:, well])
+                fit_parameters = fit_curve(temperature, fluorescence)
+                if fit_parameters is None:
+                    results = np.array([header[well], np.nan])
+                else:
+                    min_fluor = 0
+                    max_fluor = 100
+                    results = np.array([header[well], 
+                                        five_parametric_logistic_fixed(temperature_of_interest,
+                                                                       *fit_parameters)])
+                    output = np.vstack((output, results))
+            np.savetxt(path.join(path.dirname(output_filepath), "isothermal_analysis.csv"), 
+                       output, fmt="%s", delimiter=",")
+            
+        def retrieve_isotermal_temperature_input():
+            return isothermal_temperature_input.get("1.0","end-1c")
+            
+        # temporary function to test tm_analysis and isothermal_analysis
+
         frame = tk.Frame(master)
         frame.pack()
 
         picker_button = tk.Button(master, text="Open", command=io_path)
-        analyse_button = tk.Button(master, text="Analyse", state='disabled', command=analyse)
+        tm_analysis_button = tk.Button(master, text="Tm analysis", state='disabled',
+                                       command=tm_analysis)
+        isothermal_analysis_button = tk.Button(master, text="Isothermal analysis", state='disabled',
+                                               command=isothermal_analysis)
+        isothermal_temperature_input = tk.Text(master, height = 1, width = 5)
         exit_button = tk.Button(master, text='Exit', command=quit)
         
         normalize_checkbox_value = tk.IntVar()
@@ -112,10 +160,12 @@ class Application():
 
         normalize_checkbox.pack(pady=15)
         picker_button.pack(pady=15)
-        analyse_button.pack(pady=15)
+        tm_analysis_button.pack(pady=15)
+        isothermal_analysis_button.pack(pady=15)
+        isothermal_temperature_input.pack(pady=15)
         exit_button.pack(side=tk.BOTTOM)
 
-version = '2311'
+version = '2312'
 
 if __name__ == '__main__':
     root = tk.Tk()

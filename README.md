@@ -14,6 +14,12 @@ Transition phase of the thermal denaturation curve and the corresponding tempera
 
 ![](/results_example/B2.png)
 
+### Isothermal analysis
+
+An optional feature, allows to roughly estimate unfolded fraction at specified temperature. Useful whenever FTSA have to be compared to quantitative CETSA or other thermal denaturation-based target engagement assays.
+
+*Considering relatively high protein concentration in FTSA experiments, to quantify $$EC_{50}$$ analyze concentration-response curves with quadratic binding equations - tight-binding conditions are often satisfied.*
+
 ### Good to know
 
 Samuel, E. L. G.; Holmes, S. L.; Young, D. W. [Processing Binding Data Using an Open-Source Workflow.](https://jcheminf.biomedcentral.com/articles/10.1186/s13321-021-00577-1) J. Cheminform. 2021, 13 (1), 99. **Good reference on non-mechanistic curve fitting of FTSA data.**
