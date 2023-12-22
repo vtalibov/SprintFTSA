@@ -9,6 +9,7 @@ import scipy.optimize as opt
 from os import path
 import tkinter as tk
 from tkinter import filedialog
+from tkinter import ttk
 
 
 def constrains(fluorescence):
@@ -112,9 +113,13 @@ class Application():
                 output = np.vstack((output, results))
             np.savetxt(output_filepath, output, fmt="%s", delimiter=',')
 
+#       "end-1c" to avoid new line.
+        def retrieve_isothermal_temperature_input():
+            return isothermal_temperature_input.get("1.0","end-1c")
+
         def isothermal_analysis():
             try:
-                temperature_of_interest = float(retrieve_isotermal_temperature_input())
+                temperature_of_interest = float(retrieve_isothermal_temperature_input())
             except Exception:
                 tk.messagebox.showerror("Error", "Invalid temperature value.")
             experimental_data, header = open_data(input_filepath)
@@ -135,37 +140,47 @@ class Application():
             np.savetxt(path.join(path.dirname(output_filepath), "isothermal_analysis.csv"), 
                        output, fmt="%s", delimiter=",")
             
-        def retrieve_isotermal_temperature_input():
-            return isothermal_temperature_input.get("1.0","end-1c")
-            
-        # temporary function to test tm_analysis and isothermal_analysis
-
-        frame = tk.Frame(master)
-        frame.pack()
-
+#       interface objects
         picker_button = tk.Button(master, text="Open", command=io_path)
-        tm_analysis_button = tk.Button(master, text="Tm analysis", state='disabled',
+        tm_analysis_button = tk.Button(master, text="Analyse", state='disabled',
                                        command=tm_analysis)
-        isothermal_analysis_button = tk.Button(master, text="Isothermal analysis", state='disabled',
+        isothermal_analysis_button = tk.Button(master, text="Analyse", state='disabled',
                                                command=isothermal_analysis)
-        isothermal_temperature_input = tk.Text(master, height = 1, width = 5)
+        isothermal_temperature_input = tk.Text(master, height = 1, width = 10)
         exit_button = tk.Button(master, text='Exit', command=quit)
         
         normalize_checkbox_value = tk.IntVar()
         normalize_checkbox = tk.Checkbutton(master, text='Normalize data',
                                             variable=normalize_checkbox_value, onvalue=1, offvalue=0)
+        separator_1 = ttk.Separator(root, orient='horizontal')
+        separator_2 = ttk.Separator(root, orient='horizontal')
         
-        tk.Label(master, text="SprintFTSA", font='arial 16 bold').pack(pady=15)
-        tk.Label(master, text=version, font='arial 12').pack()
+#       setting title and grid
+        root.title("SprintFTSA")
+        root.resizable(width=True, height=True)
+        root.columnconfigure(0, weight=1)
+        root.columnconfigure(1, weight=3)
 
-        normalize_checkbox.pack(pady=15)
-        picker_button.pack(pady=15)
-        tm_analysis_button.pack(pady=15)
-        isothermal_analysis_button.pack(pady=15)
-        isothermal_temperature_input.pack(pady=15)
-        exit_button.pack(side=tk.BOTTOM)
+#       interface
+        tk.Label(master, text="SprintFTSA", font='arial 16 bold').grid(row = 0, column = 0,
+                                                                       columnspan=2, pady=15)
+        tk.Label(master, text=version, font='arial 12').grid(row=1, column=0, columnspan=2)
+        picker_button.grid(row=2, column=0, columnspan=2, pady=5)
+        separator_1.grid(row=3, column=0, columnspan=2, sticky='we')
+        tk.Label(master, text='Tm analysis', font='Arial 14').grid(row=3, column=0, columnspan=2,
+                                                                   pady=10)
+        normalize_checkbox.grid(row=4, column=0, columnspan=2, pady=5)
+        tm_analysis_button.grid(row=5, column=0, columnspan=2, pady=5)
+        separator_2.grid(row=6, column=0, columnspan=2, sticky='we')
+        tk.Label(master, text='Isothermal analysis', font='Arial 14').grid(row=6, column=0,
+                                                                           columnspan=2, pady=10)
+        tk.Label(master, text='Enter temperature', font='Arial 10').grid(row=7, column = 0,
+                                                                         sticky='e', pady=5)
+        isothermal_temperature_input.grid(row=7, column=1, pady=5)
+        isothermal_analysis_button.grid(row=8, column=0, columnspan=2, pady=5)
+        exit_button.grid(row=9, column=0, columnspan=2, pady=15)
 
-version = '2312'
+version = 'v.2312'
 
 if __name__ == '__main__':
     root = tk.Tk()
