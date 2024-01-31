@@ -14,6 +14,10 @@ Transition phase of the thermal denaturation curve and the corresponding tempera
 
 ![](/results_example/B2.png)
 
+### Results
+
+Curve parameters (infliction point `infl`, steepness coefficient `hill`, asymmetry parameter `assym`) and the quantified midpoint `Tm` are reported to a defined `.csv` file. Optionally (on by default), Tm values are reported as a rectangular grid in a separate file, representing microtiter plate layout.
+
 ### Isothermal analysis
 
 An optional feature, allows to roughly estimate unfolded fraction at specified temperature. Useful whenever FTSA has to be compared to quantitative CETSA or other thermal denaturation-based target engagement assays.
