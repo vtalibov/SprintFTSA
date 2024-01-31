@@ -97,7 +97,7 @@ class Application():
         def tm_analysis():
             experimental_data, header = open_data(input_filepath)
             temperature = experimental_data[:, 0] # retrieve temperature values
-            output = np.array(['Well', '5PL'])
+            output = np.array(['Well', 'infl', 'hill', 'assym', 'Tm'])
             for well in range(1, experimental_data.shape[1]):
                 if normalize_checkbox_value.get() == 1:
                     fluorescence = normalize_fluorescence(experimental_data[:, well])
@@ -105,9 +105,10 @@ class Application():
                     fluorescence = experimental_data[:, well]
                 fit_parameters = fit_curve(temperature, fluorescence)
                 if fit_parameters is None:
-                    results = np.array([header[well], np.nan])
+                    results = np.array([header[well], np.nan, np.nan, np.nan, np.nan])
                 else:
-                    results = np.array([header[well], get_tm(*fit_parameters)])
+                    results = np.array([header[well], fit_parameters[0], fit_parameters[1],
+                                       fit_parameters[2], get_tm(*fit_parameters)])
                     title = header[well]
                     make_plot(temperature, fluorescence, fit_parameters, min_fluor, max_fluor, title)
                 output = np.vstack((output, results))
@@ -152,6 +153,10 @@ class Application():
         normalize_checkbox_value = tk.IntVar()
         normalize_checkbox = tk.Checkbutton(master, text='Normalize data',
                                             variable=normalize_checkbox_value, onvalue=1, offvalue=0)
+        grid_output_checkbox_value = tk.IntVar()
+        grid_output_checkbox = tk.Checkbutton(master, text='Microtiter plate grid',
+                                              variable=grid_output_checkbox_value, onvalue=1,
+                                              offvalue=0)
         separator_1 = ttk.Separator(root, orient='horizontal')
         separator_2 = ttk.Separator(root, orient='horizontal')
         
@@ -169,7 +174,8 @@ class Application():
         separator_1.grid(row=3, column=0, columnspan=2, sticky='we')
         tk.Label(master, text='Tm analysis', font='Arial 14').grid(row=3, column=0, columnspan=2,
                                                                    pady=10)
-        normalize_checkbox.grid(row=4, column=0, columnspan=2, pady=5)
+        normalize_checkbox.grid(row=4, column=0, sticky='e', pady=5)
+        grid_output_checkbox.grid(row=4, column=1, pady=5)
         tm_analysis_button.grid(row=5, column=0, columnspan=2, pady=5)
         separator_2.grid(row=6, column=0, columnspan=2, sticky='we')
         tk.Label(master, text='Isothermal analysis', font='Arial 14').grid(row=6, column=0,
