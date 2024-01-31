@@ -112,6 +112,24 @@ class Application():
                     title = header[well]
                     make_plot(temperature, fluorescence, fit_parameters, min_fluor, max_fluor, title)
                 output = np.vstack((output, results))
+            # feature to get Tm values as a plate grid, if the option is ticked.
+            if grid_output_checkbox_value.get() == 1:
+                tm_values = output[1:, 4]
+                number_of_wells = tm_values.size
+                number_of_rows = (number_of_wells * 2 / 3)**0.5
+                number_of_columns = number_of_wells / number_of_rows
+                # check if 2:3 rectangular matrix is possible
+                try:
+                    if number_of_rows.is_integer and number_of_columns.is_integer:
+                        number_of_rows = int(number_of_rows) 
+                        number_of_columns = int(number_of_columns)
+                    else:
+                        raise Exception("Results list can not be reshapen.")
+                    tm_in_grid = tm_values.reshape(number_of_rows, number_of_columns)
+                    np.savetxt(path.join(path.dirname(output_filepath), "Tm_as_grid.csv"), 
+                                     tm_in_grid, fmt="%s", delimiter=",")
+                except Exception:
+                    tk.messagebox.showerror("Error", "Input data can not be reshapen into a 2:3 matrix (96-wells, 384-wells...).")
             np.savetxt(output_filepath, output, fmt="%s", delimiter=',')
 
 #       "end-1c" to avoid new line.
@@ -152,11 +170,14 @@ class Application():
         
         normalize_checkbox_value = tk.IntVar()
         normalize_checkbox = tk.Checkbutton(master, text='Normalize data',
-                                            variable=normalize_checkbox_value, onvalue=1, offvalue=0)
-        grid_output_checkbox_value = tk.IntVar()
+                                            variable=normalize_checkbox_value,
+                                            onvalue=1, offvalue=0)
+
+        grid_output_checkbox_value = tk.IntVar(value = 1)
         grid_output_checkbox = tk.Checkbutton(master, text='Microtiter plate grid',
                                               variable=grid_output_checkbox_value, onvalue=1,
                                               offvalue=0)
+
         separator_1 = ttk.Separator(root, orient='horizontal')
         separator_2 = ttk.Separator(root, orient='horizontal')
         
@@ -186,7 +207,7 @@ class Application():
         isothermal_analysis_button.grid(row=8, column=0, columnspan=2, pady=5)
         exit_button.grid(row=9, column=0, columnspan=2, pady=15)
 
-version = 'v.2312'
+version = 'v.2401'
 
 if __name__ == '__main__':
     root = tk.Tk()
